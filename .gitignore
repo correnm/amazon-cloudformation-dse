@@ -12,3 +12,11 @@
 
 #generated stacks to teardown file
 teardown.txt
+
+# Terraform compiled files
+*.tfstate
+*.tfstate.backup
+my.tfvars
+
+# Mac
+.DS_Store
