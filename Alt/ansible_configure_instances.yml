@@ -1,0 +1,23 @@
+---
+- name: Install Python 2.7
+  hosts: ec2
+  become: yes
+  gather_facts: no
+  pre_tasks:
+    - name: "install python2"
+      raw: sudo apt-get -y install python-simplejson
+      changed_when: False
+
+- name: Run common script
+  hosts: ec2
+  roles:
+    - common
+
+- name: Run DSE Script
+  hosts: ec2
+  vars_prompt:
+    - name: "datastax_academy_password"
+      prompt: "DataStax Academy password for configured username"
+      private: no
+  roles:
+    - dse-common

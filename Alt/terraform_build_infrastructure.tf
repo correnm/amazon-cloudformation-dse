@@ -5,12 +5,6 @@ provider "aws" {
   region = "${var.region}"
 }
 
-# A public key to include in the ~/.ssh/authorized_keys on each node
-resource "aws_key_pair" "cluster-key-pair" {
-  key_name = "${var.key_name}"
-  public_key = "${file(var.public_key_path)}"
-}
-
 # The virtual private cloud to host the cluster in
 resource "aws_vpc" "cluster-vpc" {
   cidr_block = "10.20.0.0/16"
@@ -64,82 +58,38 @@ resource "aws_security_group" "cluster-sg" {
     from_port = 22
     to_port = 22
     protocol = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
+    cidr_blocks = [
+      "0.0.0.0/0"]
   }
 
-  # unencrypted access to OpsCenter, required only for access until SSL is available
-  ingress {
-    from_port = 8888
-    to_port = 8888
-    protocol = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
-
-  # Encrypted access to OpsCenter
-  ingress {
-    from_port = 8443
-    to_port = 8443
-    protocol = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
-
-  # Access to DSE
+  # CQL Access From Anywhere
   ingress {
     from_port = 9042
     to_port = 9042
     protocol = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
+    cidr_blocks = [
+      "0.0.0.0/0"]
   }
 
-  # DSE inter-node
+  # Cassandra Internode connections
   ingress {
     from_port = 7000
-    to_port = 7000
-    protocol = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
-
-  # DSE inter-node SSL
-  ingress {
-    from_port = 7001
     to_port = 7001
     protocol = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
+    cidr_blocks = [
+      "0.0.0.0/0"]
   }
 
-  # DSE client port (trift)
-  ingress {
-    from_port = 9160
-    to_port = 9160
-    protocol = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
-
-  # DSE Spark Master inter-node port
-  ingress {
-    from_port = 7077
-    to_port = 7077
-    protocol = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
-
-  # DSE inter-node messaging service
-  ingress {
-    from_port = 8609
-    to_port = 8609
-    protocol = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
-
-  # JMX Monitoring
+  # JMX Access From Anywhere
   ingress {
     from_port = 7199
     to_port = 7199
     protocol = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
+    cidr_blocks = [
+      "0.0.0.0/0"]
   }
 
-  # Access From within subnet, no filtering
+  # Access From Within Subnet
   ingress {
     from_port = 0
     to_port = 0
@@ -147,12 +97,13 @@ resource "aws_security_group" "cluster-sg" {
     self = true
   }
 
-  # outbound internet access, required b/c tf removes the default allow all outbound rule
+  # outbound internet access
   egress {
     from_port = 0
     to_port = 0
     protocol = "-1"
-    cidr_blocks = ["0.0.0.0/0"]
+    cidr_blocks = [
+      "0.0.0.0/0"]
   }
 }
 
@@ -160,7 +111,7 @@ resource "aws_security_group" "cluster-sg" {
 resource "aws_instance" "dse_cluster_seed" {
   ami = "${lookup(var.amis, var.region)}"
   instance_type = "${var.instance_type_dse_max}"
-  key_name = "${aws_key_pair.cluster-key-pair.id}"
+  key_name = "${var.aws_keypair}"
 
   vpc_security_group_ids = ["${aws_security_group.cluster-sg.id}"]
   subnet_id = "${aws_subnet.cluster-subnet.id}"
@@ -170,7 +121,7 @@ resource "aws_instance" "dse_cluster_seed" {
   count = "${var.seed_node_count}"
 
   tags {
-    Name = "${var.g2ops_cluster_name}_seednode_node${count.index}"
+    Name = "${var.g2ops_cluster_name} - Seed - node${count.index}"
     is_dse_seed_node = 1
     is_dse_node = 1
     is_cassandra_node = 1
@@ -184,7 +135,7 @@ resource "aws_instance" "dse_cluster_seed" {
 resource "aws_instance" "dse_cluster_node" {
   ami = "${lookup(var.amis, var.region)}"
   instance_type = "${var.instance_type_dse_max}"
-  key_name = "${aws_key_pair.cluster-key-pair.id}"
+  key_name = "${var.aws_keypair}"
 
   vpc_security_group_ids = ["${aws_security_group.cluster-sg.id}"]
   subnet_id = "${aws_subnet.cluster-subnet.id}"
@@ -194,7 +145,7 @@ resource "aws_instance" "dse_cluster_node" {
   count = "${var.total_node_count - var.seed_node_count}"
 
   tags {
-    Name = "${var.g2ops_cluster_name}_nodeonly_node${var.seed_node_count + count.index}"
+    Name = "${var.g2ops_cluster_name} - Node - node${var.seed_node_count + count.index}"
     is_dse_seed_node = 0
     is_dse_node = 1
     is_cassandra_node = 1

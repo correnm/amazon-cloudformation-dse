@@ -4,22 +4,15 @@ variable "access_key" {}
 # AWS Secret Key
 variable "secret_key" {}
 
+# AWS Key Pair
+variable "aws_keypair" {}
+
 # G2 Ops AWS Mgmt Tags
 variable "g2ops_owner" {}
 variable "expire_after_date" {}
 
 variable "g2ops_cluster_name" {
   default = "DSE Test Cluster"
-}
-
-# The path to the ssh public key to associate with the instances
-variable "public_key_path" {
-  default = "~/.ssh/MyRsaKey.pub"
-}
-
-# The name to associate the public key with
-variable "key_name" {
-  default = "MyRsaKey"
 }
 
 # the region to provision the infrastructure in
@@ -52,10 +45,10 @@ variable "amis" {
 
 # recommend > 1 seed nodes
 variable "seed_node_count" {
-  default = 2
+  default = 1
 }
 
 # Must be >= seed_node_count
 variable "total_node_count" {
-  default = 5
+  default = 1
 }

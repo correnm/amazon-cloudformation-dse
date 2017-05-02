@@ -1,0 +1,38 @@
+---
+- include: set_facts.yml
+
+- name: Add DataStax Repository
+  become: yes
+  apt_repository:
+    repo: "deb http://{{datastax_academy_username}}:{{ datastax_academy_password }}@debian.datastax.com/enterprise stable main"
+    filename: /etc/apt/sources.list.d/datastax.sources.list
+
+- name: Add DataStax Repository Key
+  become: yes
+  apt_key:
+    url: "http://debian.datastax.com/debian/repo_key"
+
+- name: Install DSE
+  become: yes
+  apt:
+    name: dse-full
+    state: latest
+    allow_unauthenticated: yes
+    update_cache: yes
+
+- name: Create Cassandra Yaml Config
+  become: yes
+  template:
+    src: cassandra.yaml
+    dest: /etc/dse/cassandra/cassandra.yaml
+    mode: 0644
+    owner: cassandra
+    group: cassandra
+    backup: yes
+  register: cassandra_config
+
+- name: Start DSE Service
+  become: yes
+  service:
+    name: dse
+    state: started

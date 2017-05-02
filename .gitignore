@@ -18,5 +18,8 @@ teardown.txt
 *.tfstate.backup
 my.tfvars
 
+# Ansible retry files
+*.retry
+
 # Mac
 .DS_Store

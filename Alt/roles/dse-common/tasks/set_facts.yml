@@ -1,0 +1,25 @@
+---
+- name: Set IP and Seed Facts
+  set_fact:
+    # Use the private ip address inside ec2
+    dse_cluster_name: "{{ ec2_tag_G2OpsClusterName }}"
+    dse_node_private_ip: "{{ ec2_private_ip_address }}"
+    dse_node_public_ip: "{{ ec2_ip_address }}"
+  when: ec2_private_ip_address is defined
+
+# Create a csv file of all host seeds.
+# There is no clean functionality to generate this without using a template
+- name: Create Seed List File
+  template:
+    src: seeds.j2
+    dest: /tmp/seeds
+
+- name: Read Seeds From File
+  shell: cat /tmp/seeds
+  register: seed_csv
+  changed_when: False
+
+- name: Register Seeds for host
+  set_fact:
+    dse_node_seeds: "{{ seed_csv.stdout }}"
+
